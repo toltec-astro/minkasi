@@ -1,7 +1,7 @@
 import numpy as np
 import ctypes
 import time
-import mkfftw
+from . import mkfftw
 #import pyfits
 from astropy.io import fits as pyfits
 import astropy
@@ -49,7 +49,8 @@ except:
 #    have_numba=False
 
 
-mylib=ctypes.cdll.LoadLibrary("libminkasi.so")
+# mylib=ctypes.cdll.LoadLibrary("libminkasi.so")
+from .._minkasi_init import mylib
 tod2map_simple_c=mylib.tod2map_simple
 tod2map_simple_c.argtypes=[ctypes.c_void_p,ctypes.c_void_p,ctypes.c_int,ctypes.c_int,ctypes.c_void_p]
 

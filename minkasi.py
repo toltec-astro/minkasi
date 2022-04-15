@@ -3592,8 +3592,8 @@ class NoiseSmoothedSVD:
             noisevec=np.median(np.abs(np.diff(dat_use,axis=1)),axis=1)
             dat_use=dat_use/(np.repeat([noisevec],dat_use.shape[1],axis=0).transpose())
         if u_in is None:
-            u,s,v=np.linalg.svd(dat_use,0)
-            ndet=s.size
+            u,s,v=np.linalg.svd(dat_use,full_matrices=True)
+            ndet=u.shape[0]
         else:
             u=u_in
             assert(u.shape[0]==u.shape[1])

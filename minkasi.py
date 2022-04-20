@@ -11,6 +11,9 @@ from astropy.cosmology import WMAP9 as cosmo #choose your cosmology here
 import scipy
 import copy
 import sys
+import netCDF4 as nc
+import gc
+
 try:
     import healpy
     have_healpy=True
@@ -4215,6 +4218,94 @@ def read_tod_from_fits_cbass(fname,dopol=False,lat=37.2314,lon=-118.2941,v34=Tru
             print('missing nm20 for ',fname)
 
     f.close()
+    return dat
+
+def read_tod_from_toltec_nc(fname,arrayindex):
+    ncfile = nc.Dataset(fname)
+
+    all_data = ncfile['DATA']
+    all_dx = ncfile['DX']
+    all_dy = ncfile['DY']
+    all_elev = ncfile['ELEV']
+    all_flag = ncfile['FLAG']
+    all_pixid = ncfile['PIXID']
+    all_time = ncfile['TIME']
+    all_arrayid = ncfile['ARRAYID']
+
+    #Can be read in but unneeded
+
+    # all_azoff = ncfile['AZOFF']
+    # all_eloff = ncfile['ELOFF']
+    # all_afwhm = ncfile['AFWHM']
+    # all_bfwhm = ncfile['BFWHM']
+
+
+    select_vals = np.where(np.array(all_arrayid)==arrayindex)[0]
+
+    selected_data = all_data[:,select_vals]
+    selected_dx = all_dx[:,select_vals]
+    selected_dy = all_dy[:,select_vals]
+    selected_flag = all_flag[:,select_vals]
+    selected_pixid = all_pixid[select_vals]
+
+    #not needed
+    # selected_azoff = all_azoff[select_vals]
+    # selected_eloff = all_eloff[select_vals]
+    # selected_afwhm = all_afwhm[select_vals]
+    # selected_bfwhm = all_bfwhm[select_vals]
+
+
+    ndet=len(selected_pixid)
+    nsamp=len(all_time)
+    
+    ff=180./np.pi
+    xmin=selected_dx.min()*ff
+    xmax=selected_dx.max()*ff
+    ymin=selected_dy.min()*ff
+    ymax=selected_dy.max()*ff
+    print('nsamp = ',nsamp,'  ,','ndet = ',ndet,'  ,', 'ndatapoints = ',ndet*nsamp, '  ,',' on ',fname, 'with lims ',xmin,xmax,ymin,ymax )
+    
+    dat={}
+
+    ndet=np.int(ndet)
+    nsamp=np.int(nsamp)
+
+    samp_ones = np.ones(nsamp)
+    det_ones = np.ones(ndet)
+
+
+
+    dat['dx']= np.transpose(selected_dx)
+    dat['dy']= np.transpose(selected_dy)
+
+    
+    elev=np.array(all_elev)*np.pi/180
+    dat['elev']=np.outer(det_ones,elev)
+
+    dt=np.median(np.diff(all_time))
+    dat['dt']=dt
+    pixid=selected_pixid
+    dat['pixid']=pixid
+    dat['dat_calib']=np.transpose(selected_data)
+
+    #work the flags out later
+    # if np.sum(raw['UFNU']>9e5)>0:
+    #     dat['mask']=np.reshape(raw['UFNU']<9e5,dat['dat_calib'].shape)
+    #     dat['mask_sum']=np.sum(dat['mask'],axis=0)
+    
+    dat['fname']=fname
+
+    del select_vals
+    del selected_data
+    del selected_dx
+    del selected_dy
+    del selected_flag
+    del selected_pixid
+    del samp_ones
+    del det_ones
+    gc.collect()
+
+    ncfile.close()
     return dat
 
 def read_tod_from_fits(fname,hdu=1,branch=None):

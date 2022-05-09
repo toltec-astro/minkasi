@@ -4220,9 +4220,11 @@ def read_tod_from_fits_cbass(fname,dopol=False,lat=37.2314,lon=-118.2941,v34=Tru
     f.close()
     return dat
 
-def read_tod_from_toltec_nc(fname,arrayindex):
+def read_tod_from_toltec_nc(fname,arrayindex, sample_slice=None):
     ncfile = nc.Dataset(fname)
 
+    if sample_slice is None:
+        sample_slice = slice(None, None)
     all_data = ncfile['DATA']
     all_dx = ncfile['DX']
     all_dy = ncfile['DY']
@@ -4242,11 +4244,13 @@ def read_tod_from_toltec_nc(fname,arrayindex):
 
     select_vals = np.where(np.array(all_arrayid)==arrayindex)[0]
 
-    selected_data = all_data[:,select_vals]
-    selected_dx = all_dx[:,select_vals]
-    selected_dy = all_dy[:,select_vals]
-    selected_flag = all_flag[:,select_vals]
+    selected_data = all_data[sample_slice,select_vals]
+    selected_dx = all_dx[sample_slice,select_vals]
+    selected_dy = all_dy[sample_slice,select_vals]
+    selected_elev = all_elev[sample_slice]
+    selected_flag = all_flag[sample_slice,select_vals]
     selected_pixid = all_pixid[select_vals]
+    selected_time = all_time[sample_slice]
 
     #not needed
     # selected_azoff = all_azoff[select_vals]
@@ -4256,7 +4260,7 @@ def read_tod_from_toltec_nc(fname,arrayindex):
 
 
     ndet=len(selected_pixid)
-    nsamp=len(all_time)
+    nsamp=len(selected_time)
     
     ff=180./np.pi
     xmin=selected_dx.min()*ff
@@ -4279,10 +4283,10 @@ def read_tod_from_toltec_nc(fname,arrayindex):
     dat['dy']= np.transpose(selected_dy)
 
     
-    elev=np.array(all_elev)*np.pi/180
+    elev=np.array(selected_elev)*np.pi/180
     dat['elev']=np.outer(det_ones,elev)
 
-    dt=np.median(np.diff(all_time))
+    dt=np.median(np.diff(selected_time))
     dat['dt']=dt
     pixid=selected_pixid
     dat['pixid']=pixid
@@ -4299,8 +4303,10 @@ def read_tod_from_toltec_nc(fname,arrayindex):
     del selected_data
     del selected_dx
     del selected_dy
+    del selected_elev
     del selected_flag
     del selected_pixid
+    del selected_time
     del samp_ones
     del det_ones
     gc.collect()

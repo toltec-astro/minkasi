@@ -4221,17 +4221,26 @@ def read_tod_from_fits_cbass(fname,dopol=False,lat=37.2314,lon=-118.2941,v34=Tru
     return dat
 
 def read_tod_from_toltec_nc(fname,arrayindex, sample_slice=None):
+    t0 = time.time()
     ncfile = nc.Dataset(fname)
 
     if sample_slice is None:
         sample_slice = slice(None, None)
+    if 'TIME' in ncfile.variables:
+        v_time = ncfile['TIME']
+    else:
+        v_time = ncfile['TelTime']
+    if 'ELEV' in ncfile.variables:
+        v_elev = ncfile['ELEV']
+    else:
+        v_elev = ncfile['TelElDes']
     all_data = ncfile['DATA']
     all_dx = ncfile['DX']
     all_dy = ncfile['DY']
-    all_elev = ncfile['ELEV']
+    all_elev = v_elev 
     all_flag = ncfile['FLAG']
     all_pixid = ncfile['PIXID']
-    all_time = ncfile['TIME']
+    all_time = v_time 
     all_arrayid = ncfile['ARRAYID']
 
     #Can be read in but unneeded
@@ -4261,6 +4270,9 @@ def read_tod_from_toltec_nc(fname,arrayindex, sample_slice=None):
 
     ndet=len(selected_pixid)
     nsamp=len(selected_time)
+
+    t1 = time.time()
+    print(f'read data file {fname} with slice={sample_slice} took {t1 - t0} s')
     
     ff=180./np.pi
     xmin=selected_dx.min()*ff

@@ -4226,7 +4226,7 @@ class TodVec:
             times[i]=t2-t1
         if have_mpi:
             mapset2.mpi_reduce()
-        print(tot_times)
+        # print(tot_times)
         if report_times:
             return mapset2,times
         else:
